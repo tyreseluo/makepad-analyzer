@@ -10,7 +10,7 @@ import {
 let client: LanguageClient;
 
 export function activate(_: vscode.ExtensionContext) {
-    const command = process.env.SERVER_PATH + '.exe';
+    const command = process.env.SERVER_PATH;
 
     console.log("Starting Makepad Analyzer with command", command);
 
