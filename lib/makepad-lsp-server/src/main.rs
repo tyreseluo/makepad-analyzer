@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use lsp_types::{
-    request::GotoDefinition, CompletionOptions, GotoDefinitionResponse, HoverOptions, HoverProviderCapability, InitializeParams, OneOf, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind
+    request::Completion, CompletionItem, CompletionItemKind, CompletionOptions, CompletionResponse, GotoDefinitionResponse, HoverOptions, HoverProviderCapability, InitializeParams, OneOf, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind
 };
 
 use lsp_server::{Connection, ExtractError, Message, Request, RequestId, Response};
@@ -10,7 +10,7 @@ use makepad_lsp_server::utils::scan_workspace;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error + Sync + Send>> {
 
-    eprintln!("-----------------------------------> starting generic LSP server");
+    eprintln!("Starting generic LSP server");
     // Create the transport. Includes the stdio (stdin and stdout) versions but this could
     // also be implemented to use sockets or HTTP.
     let (connection, io_threads) = Connection::stdio();
@@ -18,13 +18,13 @@ async fn main() -> Result<(), Box<dyn Error + Sync + Send>> {
     let server_capabilities = serde_json::to_value(&ServerCapabilities {
         completion_provider: Some(CompletionOptions::default()),
         text_document_sync: Some(TextDocumentSyncCapability::Kind(TextDocumentSyncKind::FULL)),
-        hover_provider: Some(HoverProviderCapability::Options(HoverOptions::default())),
-        definition_provider: Some(OneOf::Left(true)),
+        // hover_provider: Some(HoverProviderCapability::Options(HoverOptions::default())),
+        // definition_provider: Some(OneOf::Left(true)),
         ..Default::default()
     })
     .unwrap();
 
-    eprintln!("wating for initialize.....");
+    eprintln!("Wating for initialize.....");
 
     let initialization_params = match connection.initialize(server_capabilities) {
         Ok(it) => it,
@@ -56,33 +56,42 @@ fn main_loop(
 ) -> Result<(), Box<dyn Error + Sync + Send>> {
 
     for msg in &connection.receiver {
-        eprintln!("got msg: {msg:?}");
         match msg {
             Message::Request(req) => {
                 if connection.handle_shutdown(&req)? {
                     return Ok(());
                 }
-                eprintln!("got request: {req:?}");
-                match cast::<GotoDefinition>(req) {
+                match cast::<Completion>(req) {
                     Ok((id, params)) => {
-                        eprintln!("goto definition request: {:#?}", params);
-                        let result = Some(GotoDefinitionResponse::Array(Vec::new()));
+                        eprintln!("Get completion request: {:#?}", params);
+                        let items = vec![
+                            CompletionItem {
+                                label: "1".to_string(),
+                                kind: Some(CompletionItemKind::FIELD),
+                                detail: Some("example detail".to_string()),
+                                ..Default::default()
+                            }
+                        ];
+
+                        let result = Some(CompletionResponse::Array(items));
                         let result = serde_json::to_value(&result).unwrap();
-                        let resp = Response { id, result: Some(result), error: None };
-                        connection.sender.send(Message::Response(resp))?;
+
+                        let response = Response {
+                            id,
+                            result: Some(result),
+                            error: None,
+                        };
+                        connection.sender.send(Message::Response(response))?;
                         continue;
                     }
                     Err(err @ ExtractError::JsonError { .. }) => panic!("{err:?}"),
                     Err(ExtractError::MethodMismatch(req)) => req,
                 };
-                // ...
             }
             Message::Response(resp) => {
                 eprintln!("got response: {resp:#?}");
             }
-            Message::Notification(not) => {
-                eprintln!("got notification: {not:#?}");
-            }
+            Message::Notification(_) => {}
         }
     }
     Ok(())

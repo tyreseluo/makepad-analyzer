@@ -3,6 +3,7 @@ use anyhow::Result;
 use lsp_types::Url;
 use tokio::fs;
 
+/// Now we just scan the workspace for files containing the `live_design!{}` macro
 pub async fn scan_workspace(workspace_uri: Url) -> Result<()> {
     find_live_design_files(workspace_uri).await?;
     Ok(())

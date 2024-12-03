@@ -9,7 +9,7 @@ import {
 
 let client: LanguageClient;
 
-export function activate(_: vscode.ExtensionContext) {
+export function activate(context: vscode.ExtensionContext) {
     const command = process.env.SERVER_PATH;
 
     console.log("Starting Makepad Analyzer with command", command);
@@ -35,6 +35,55 @@ export function activate(_: vscode.ExtensionContext) {
             fileEvents: vscode.workspace.createFileSystemWatcher("**/.clientrc"),
         },
     }
+
+    const completionProviderr = vscode.languages.registerCompletionItemProvider(
+        { scheme: "file", "language": "rust" },
+        {
+            provideCompletionItems: async (document, position, token, context) => {
+
+                const lineText = document.lineAt(position.line).text;
+                const textBeforeCursor = lineText.slice(0, position.character);
+                const lastWord = textBeforeCursor.split(/\s+/).pop() || '';
+
+                console.log('Current input:', lastWord);
+
+                const result = await client.sendRequest("textDocument/completion", {
+                    textDocument: { uri: document.uri.toString() },
+                    position: client.code2ProtocolConverter.asPosition(position),
+                    context: {
+                        triggerKind: context.triggerKind,
+                        triggerCharacter: lastWord,
+                    }
+                });
+
+                if (Array.isArray(result)) {
+                    console.log("Got completion items", result);
+                    return result.map(item => {
+                        const vscodeCompletionItem = new vscode.CompletionItem(
+                          item.label,
+                          item.kind
+                        );
+
+                        // 设置其他属性
+                        if (item.detail) {
+                          vscodeCompletionItem.detail = item.detail;
+                        }
+                        if (item.documentation) {
+                          vscodeCompletionItem.documentation = item.documentation;
+                        }
+
+                        console.log("Returning completion item", vscodeCompletionItem);
+
+                        return vscodeCompletionItem;
+                      });
+                };
+                return [];
+            }
+        },
+        ' ',
+    )
+
+    context.subscriptions.push(completionProviderr);
 
     client = new LanguageClient("makepad-analyzer", "makepad-analyzer", serverOptions, clientOptions);
 
