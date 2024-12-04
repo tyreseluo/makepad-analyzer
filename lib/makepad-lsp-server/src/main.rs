@@ -1,11 +1,11 @@
 use std::error::Error;
 
 use lsp_types::{
-    request::Completion, CompletionItem, CompletionItemKind, CompletionOptions, CompletionResponse, GotoDefinitionResponse, HoverOptions, HoverProviderCapability, InitializeParams, OneOf, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind
+    request::Completion, CompletionOptions, CompletionResponse, InitializeParams, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind
 };
 
 use lsp_server::{Connection, ExtractError, Message, Request, RequestId, Response};
-use makepad_lsp_server::utils::scan_workspace;
+use makepad_lsp_server::utils::{handle_completion, scan_workspace};
 // use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error + Sync + Send>> {
@@ -40,7 +40,6 @@ async fn main() -> Result<(), Box<dyn Error + Sync + Send>> {
 
     if let Some(workspace_folders) = init_params.workspace_folders {
         for folder in workspace_folders {
-          //eprintln!("workspace folder: {:#?}", folder.uri);
           scan_workspace(folder.uri).await?;
         }
     }
@@ -63,25 +62,17 @@ fn main_loop(
                 }
                 match cast::<Completion>(req) {
                     Ok((id, params)) => {
-                        eprintln!("Get completion request: {:#?}", params);
-                        let items = vec![
-                            CompletionItem {
-                                label: "1".to_string(),
-                                kind: Some(CompletionItemKind::FIELD),
-                                detail: Some("example detail".to_string()),
-                                ..Default::default()
+                        let result = Some(CompletionResponse::Array(handle_completion(params)));
+                        let result = serde_json::to_value(&result).unwrap_or_default();
+
+                        connection.sender.send(Message::Response(
+                            Response{
+                                id,
+                                result: Some(result),
+                                error: None,
                             }
-                        ];
+                        ))?;
 
-                        let result = Some(CompletionResponse::Array(items));
-                        let result = serde_json::to_value(&result).unwrap();
-
-                        let response = Response {
-                            id,
-                            result: Some(result),
-                            error: None,
-                        };
-                        connection.sender.send(Message::Response(response))?;
                         continue;
                     }
                     Err(err @ ExtractError::JsonError { .. }) => panic!("{err:?}"),

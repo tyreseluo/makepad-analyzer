@@ -36,23 +36,16 @@ export function activate(context: vscode.ExtensionContext) {
         },
     }
 
-    const completionProviderr = vscode.languages.registerCompletionItemProvider(
+    const completionProvider = vscode.languages.registerCompletionItemProvider(
         { scheme: "file", "language": "rust" },
         {
             provideCompletionItems: async (document, position, token, context) => {
-
-                const lineText = document.lineAt(position.line).text;
-                const textBeforeCursor = lineText.slice(0, position.character);
-                const lastWord = textBeforeCursor.split(/\s+/).pop() || '';
-
-                console.log('Current input:', lastWord);
-
                 const result = await client.sendRequest("textDocument/completion", {
                     textDocument: { uri: document.uri.toString() },
                     position: client.code2ProtocolConverter.asPosition(position),
                     context: {
                         triggerKind: context.triggerKind,
-                        triggerCharacter: lastWord,
+                        triggerCharacter: context.triggerCharacter,
                     }
                 });
 
@@ -80,10 +73,11 @@ export function activate(context: vscode.ExtensionContext) {
                 return [];
             }
         },
-        ' ',
-    )
+    );
 
-    context.subscriptions.push(completionProviderr);
+    context.subscriptions.push(
+        completionProvider
+    );
 
     client = new LanguageClient("makepad-analyzer", "makepad-analyzer", serverOptions, clientOptions);
 

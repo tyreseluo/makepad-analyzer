@@ -1,6 +1,6 @@
 use std::path::Path;
 use anyhow::Result;
-use lsp_types::Url;
+use lsp_types::{CompletionItem, CompletionItemKind, CompletionParams, Url};
 use tokio::fs;
 
 /// Now we just scan the workspace for files containing the `live_design!{}` macro
@@ -36,4 +36,39 @@ pub async fn find_live_design_files(workspace_uri: Url) -> Result<()> {
 async fn has_live_design_macro(file_path: &Path) -> Result<bool> {
     let content = fs::read_to_string(file_path).await?;
     Ok(content.contains("live_design!{"))
+}
+
+/// Handle the completion request
+pub fn handle_completion(params: CompletionParams) -> Vec<CompletionItem> {
+    eprintln!("Get completion request: {:#?}", params);
+
+    let trigger_text = params.context.and_then(|ctx| ctx.trigger_character).unwrap_or_default();
+
+    let current_line = params.text_document_position.text_document.uri.to_string();
+    eprintln!("Current line: {}", current_line);
+
+    let keywords = vec![
+        "use",
+        "fn",
+        "link",
+        "pub",
+        "crate::",
+        "dep",
+    ];
+
+    let mut items = Vec::<CompletionItem>::new();
+
+    for keyword in keywords {
+        if keyword.starts_with(&trigger_text) {
+            items.push(CompletionItem {
+                label: keyword.to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                detail: Some(format!("Keyword starting with '{}'", trigger_text)),
+                insert_text: Some(format!("{} ", keyword)),
+                ..Default::default()
+            });
+        }
+    }
+
+    items
 }

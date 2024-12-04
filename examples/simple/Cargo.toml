@@ -1,0 +1,8 @@
+[package]
+name = "makepad-analyzer-example"
+edition = "2021"
+version = "0.0.1"
+
+
+[dependencies]
+makepad-widgets = { git = "https://github.com/makepad/makepad", branch = "rik" }
