@@ -1,13 +1,12 @@
 mod core;
-mod context;
 mod handlers {
   pub mod notification;
   pub mod request;
 }
 
-use context::AnalyzerContext;
-use handlers::request;
-use tower_lsp::{jsonrpc::Result, lsp_types::{InitializeParams, InitializeResult}, Client, LanguageServer, LspService, Server};
+use core::context::{self, AnalyzerContext};
+use handlers::{request, notification};
+use tower_lsp::{jsonrpc::Result, lsp_types::{DidOpenTextDocumentParams, InitializeParams, InitializeResult}, Client, LanguageServer, LspService, Server};
 
 #[tokio::main]
 async fn main() {
@@ -23,6 +22,12 @@ impl LanguageServer for MakepadAnalyzer {
 
   async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
     request::handle_initialize(&self.context, params)
+  }
+
+  async fn did_open(&self, params: DidOpenTextDocumentParams) {
+    if let Err(err) = notification::handle_did_open_text_document(&self.context, params).await {
+      tracing::error!("Error handling didOpen notification: {:?}", err);
+    }
   }
 
   async fn shutdown(&self) -> Result<()> {

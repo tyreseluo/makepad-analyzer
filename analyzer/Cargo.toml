@@ -15,3 +15,8 @@ tokio                     = { workspace = true, features = ["fs", "io-std", "io-
 serde                     = { workspace   = true, features = ["derive"] }
 serde_json                = { workspace = true }
 parking_lot               = { workspace = true }
+dashmap                   = { workspace = true }
+once_cell                 = { workspace = true }
+
+[dev-dependencies]
+tracing-test = { workspace = true }
