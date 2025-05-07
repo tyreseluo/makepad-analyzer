@@ -1,0 +1,16 @@
+[workspace]
+members  = ["analyzer"]
+resolver = "2"
+
+[workspace.package]
+authors    = ["Tyrese Luo <tyreseluo@outlook.com>"]
+categories = ["makepad"]
+edition    = "2021"
+license    = "MIT"
+
+[workspace.dependencies]
+# Internal crates
+makepad-analyzer = { path = "./analyzer" }
+
+# External crates
+anyhow = { version = "1.0"}
