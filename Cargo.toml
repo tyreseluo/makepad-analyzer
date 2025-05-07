@@ -13,4 +13,7 @@ license    = "MIT"
 makepad-analyzer = { path = "./analyzer" }
 
 # External crates
-anyhow = { version = "1.0"}
+anyhow              = { version = "1.0"}
+tokio               = { version = "1.0" }
+tower-lsp           = { version = "0.20" }
+lsp-types           = { version = "0.94.1" }
