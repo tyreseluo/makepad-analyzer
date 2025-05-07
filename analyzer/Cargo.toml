@@ -5,6 +5,13 @@ license     = "MIT"
 version     = "0.1.0"
 
 [dependencies]
+makepad-analyzer-tracing   = { workspace = true }
+
 anyhow                    = { workspace = true }
+thiserror                 = { workspace = true }
+tracing                   = { workspace = true }
 tower-lsp                 = { workspace = true, features = ["proposed"] }
 tokio                     = { workspace = true, features = ["fs", "io-std", "io-util", "macros", "net", "rt-multi-thread", "sync", "time",] }
+serde                     = { workspace   = true, features = ["derive"] }
+serde_json                = { workspace = true }
+parking_lot               = { workspace = true }
