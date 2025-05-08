@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 mod core;
 mod handlers {
   pub mod notification;

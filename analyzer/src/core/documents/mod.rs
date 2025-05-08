@@ -118,10 +118,10 @@ impl Documents {
     Documents(DashMap::new())
   }
 
-  pub async fn handle_open_file(&self, url: &Url) {
-    if !self.contains_key(url.path()) {
-      if let Ok(document) = Document::build_from_path(url.path()).await {
-        info!("Building document from path: {:?}", url.path());
+  pub async fn handle_open_file(&self, uri: &Url) {
+    if !self.contains_key(uri.path()) {
+      if let Ok(document) = Document::build_from_path(uri.path()).await {
+        info!("Building document from path: {:?}", uri.path());
         let _ = self.store_document(document);
       }
     }

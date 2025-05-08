@@ -5,6 +5,10 @@ use thiserror::Error;
 pub enum DocumentError {
   #[error("No document found at {:?}", path)]
   DocumentNotFound { path: String },
+  #[error("Missing Cargo.toml in {:?}", dir)]
+  ManifestFileNotFound { dir: String },
+  #[error("Invalid manifest format: {:?}", err)]
+  InvalidManifestFormat { err: String },
   #[error("Document is already stored at {:?}", path)]
   DocumentAlreadyStored { path: String },
   #[error("File wasn't able to be created at path {:?} : {:?}", path, err)]

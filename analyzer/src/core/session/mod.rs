@@ -40,6 +40,44 @@ impl SessionManager {
     session_manager
   }
 
+  pub async fn uri_and_session_from_workspace(
+    &self,
+    uri: &Url,
+  ) -> Result<(Url, Arc<Session>), MakepadAnalyzerError> {
+    let session = self.url_to_session(uri).await?;
+    let uri = session.workspace().to_temp_url(uri)?;
+    todo!()
+  }
+
+  async fn url_to_session(&self, uri: &Url) -> Result<Arc<Session>, MakepadAnalyzerError> {
+    // First we need to get the manifest directory from the cache, if it exists
+    let manifest_dir = if let Some(cached_manifest_dir) = self.manifest_cache.get(uri) {
+      cached_manifest_dir.clone()
+    } else {
+      // If the manifest directory is not in the cache, we need to create it
+      let path = PathBuf::from(uri.path());
+      todo!()
+    };
+    todo!()
+  }
+
+  pub fn builder() -> SessionManagerBuilder {
+    SessionManagerBuilder::new()
+  }
+
+  pub fn cache(&self) -> &LRUSessionCache {
+    &self.cache
+  }
+
+  pub fn manifest_cache(&self) -> &DashMap<Url, Arc<PathBuf>> {
+    &self.manifest_cache
+  }
+
+  pub fn stop(&self) {
+    tracing::info!("Stopping the session manager");
+    self.stop_signal.notify_waiters();
+  }
+
   fn start_auto_cleanup_task(session_manager: Arc<SessionManager>) {
     tokio::spawn(async move {
       session_manager.auto_cleanup_sessions().await;
@@ -58,23 +96,6 @@ impl SessionManager {
         }
       }
     }
-  }
-
-  pub fn builder() -> SessionManagerBuilder {
-    SessionManagerBuilder::new()
-  }
-
-  pub fn cache(&self) -> &LRUSessionCache {
-    &self.cache
-  }
-
-  pub fn manifest_cache(&self) -> &DashMap<Url, Arc<PathBuf>> {
-    &self.manifest_cache
-  }
-
-  pub fn stop(&self) {
-    tracing::info!("Stopping the session manager");
-    self.stop_signal.notify_waiters();
   }
 
 }
