@@ -1,11 +1,15 @@
 mod lru_session_cache;
 mod session;
+mod sync_workspace;
 
 use std::{path::{Path, PathBuf}, sync::Arc};
 use dashmap::DashMap;
 use lru_session_cache::LRUSessionCache;
+use session::Session;
 use tokio::{sync::Notify, time::{sleep, Duration}};
 use tower_lsp::lsp_types::Url;
+
+use super::errors::MakepadAnalyzerError;
 
 const DEFAULT_SESSION_CACHE_SIZE: usize = 7;  // 7 sessions
 const DEFAULT_AUTO_CLEANUP_INTERVAL: Duration = Duration::from_secs(60 * 60);  // 1 hour

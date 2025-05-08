@@ -89,7 +89,7 @@ impl LRUSessionCache {
     self.sessions
       .iter()
       .filter_map(|entry| {
-        if !entry.value().is_active.load(std::sync::atomic::Ordering::Relaxed) {
+        if !entry.value().status() {
           Some(entry.key().clone())
         } else {
           None
