@@ -3,7 +3,7 @@ use std::ops::Deref;
 use dashmap::DashMap;
 use tower_lsp::lsp_types::{Position, Range, TextDocumentContentChangeEvent, Url};
 use tracing::info;
-use super::errors::{DocumentError, MakepadAnalyzerError};
+use super::errors::DocumentError;
 
 
 #[derive(Debug, Clone)]

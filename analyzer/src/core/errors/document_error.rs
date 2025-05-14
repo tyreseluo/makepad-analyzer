@@ -9,6 +9,8 @@ pub enum DocumentError {
   ManifestFileNotFound { dir: String },
   #[error("Invalid manifest format: {:?}", err)]
   InvalidManifestFormat { err: String },
+  #[error("Invalid makepad project: to check Cargo.toml({:?}) if makepad related dependencies have been imported.", path)]
+  NotMakepadProject { path: String },
   #[error("Document is already stored at {:?}", path)]
   DocumentAlreadyStored { path: String },
   #[error("File wasn't able to be created at path {:?} : {:?}", path, err)]

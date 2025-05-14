@@ -2,12 +2,14 @@ mod lru_session_cache;
 mod session;
 mod sync_workspace;
 
-use std::{path::{Path, PathBuf}, sync::Arc};
+use std::{path::PathBuf, sync::Arc};
 use dashmap::DashMap;
 use lru_session_cache::LRUSessionCache;
 use session::Session;
 use tokio::{sync::Notify, time::{sleep, Duration}};
 use tower_lsp::lsp_types::Url;
+
+use crate::core::{errors::{DirectoryError, DocumentError}, manifest::MakepadManifestFile};
 
 use super::errors::MakepadAnalyzerError;
 
@@ -45,20 +47,48 @@ impl SessionManager {
     uri: &Url,
   ) -> Result<(Url, Arc<Session>), MakepadAnalyzerError> {
     let session = self.url_to_session(uri).await?;
-    let uri = session.workspace().to_temp_url(uri)?;
-    todo!()
+    let temp_uri = session.workspace().workspace_to_temp_url(uri)?;
+    Ok((temp_uri, session))
   }
 
   async fn url_to_session(&self, uri: &Url) -> Result<Arc<Session>, MakepadAnalyzerError> {
+    // Use manifest cache to get the belong to makepad's project's workspace.
     // First we need to get the manifest directory from the cache, if it exists
     let manifest_dir = if let Some(cached_manifest_dir) = self.manifest_cache.get(uri) {
       cached_manifest_dir.clone()
     } else {
       // If the manifest directory is not in the cache, we need to create it
+      // We need to confirm if it is a makepad project and also check the makepad dependencies it uses.
       let path = PathBuf::from(uri.path());
-      todo!()
+      // To resolve the manifest directory, we need to find the nearest `Cargo.toml` file
+      let manifest = MakepadManifestFile::from_dir(&path).map_err(|_| {
+        DocumentError::ManifestFileNotFound {
+          dir: path.to_string_lossy().to_string(),
+        }
+      })?;
+
+      let dir = Arc::new(
+        manifest
+          .path()
+          .parent()
+          .ok_or(DirectoryError::ManifestDirNotFound)?
+          .to_path_buf()
+      );
+      self.manifest_cache.insert(uri.clone(), dir.clone());
+      // The path is child of the manifest directory, so we need to get the parent directory
+      dir
     };
-    todo!()
+
+    if let Some(session) = self.cache.get(&manifest_dir) {
+      // If the session is already in the cache, we need to return it
+      return Ok(session);
+    }
+
+    let session = Arc::new(Session::new());
+    session.init(uri).await?;
+    self.cache.insert((*manifest_dir).clone(), session.clone());
+
+    Ok(session)
   }
 
   pub fn builder() -> SessionManagerBuilder {
@@ -203,4 +233,11 @@ mod tests {
     session_manager.stop();
 
   }
+
+  #[tracing_test::traced_test]
+  #[tokio::test(flavor = "multi_thread")]
+  async fn test_build_and_find_makepad_project_manifest_cache() {
+
+  }
+
 }
